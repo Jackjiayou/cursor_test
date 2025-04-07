@@ -1,0 +1,127 @@
+
+.training-container {
+		padding: 30rpx;
+		background-color: #f5f5f5;
+		min-height: 100vh;
+}
+	
+	/* 员工信息区域样式 */
+.employee-info {
+		background-color: #ffffff;
+		border-radius: 20rpx;
+		padding: 30rpx;
+		margin-bottom: 30rpx;
+		box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.05);
+}
+.avatar-container {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		margin-bottom: 30rpx;
+}
+.avatar {
+		width: 150rpx;
+		height: 150rpx;
+		border-radius: 75rpx;
+		margin-bottom: 20rpx;
+}
+.employee-name {
+		font-size: 32rpx;
+		font-weight: bold;
+		color: #333;
+}
+.stats-container {
+		display: flex;
+		justify-content: space-around;
+		border-top: 1rpx solid #eee;
+		padding-top: 30rpx;
+}
+.stat-item {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+}
+.stat-value {
+		font-size: 40rpx;
+		font-weight: bold;
+		color: #07c160;
+		margin-bottom: 10rpx;
+}
+.stat-label {
+		font-size: 24rpx;
+		color: #666;
+}
+	
+	/* 功能按钮区域样式 */
+.function-buttons {
+		display: flex;
+		justify-content: space-around;
+		margin-bottom: 30rpx;
+}
+.function-btn {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		background-color: #ffffff;
+		border-radius: 20rpx;
+		padding: 30rpx;
+		width: 45%;
+		box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.05);
+}
+.function-icon {
+		width: 80rpx;
+		height: 80rpx;
+		margin-bottom: 20rpx;
+}
+.function-text {
+		font-size: 28rpx;
+		color: #333;
+}
+	
+	/* 练习场景区域样式 */
+.scenarios-container {
+		background-color: #ffffff;
+		border-radius: 20rpx;
+		padding: 30rpx;
+		box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.05);
+}
+.section-title {
+		font-size: 32rpx;
+		font-weight: bold;
+		color: #333;
+		margin-bottom: 30rpx;
+}
+.scenario-list {
+		display: flex;
+		flex-direction: column;
+}
+.scenario-item {
+		display: flex;
+		align-items: center;
+		padding: 30rpx 0;
+		border-bottom: 1rpx solid #eee;
+}
+.scenario-item:last-child {
+		border-bottom: none;
+}
+.scenario-icon {
+		font-size: 50rpx;
+		margin-right: 20rpx;
+}
+.scenario-info {
+		flex: 1;
+}
+.scenario-title {
+		font-size: 30rpx;
+		font-weight: bold;
+		color: #333;
+		margin-bottom: 10rpx;
+}
+.scenario-desc {
+		font-size: 24rpx;
+		color: #999;
+}
+.scenario-arrow {
+		font-size: 30rpx;
+		color: #ccc;
+}
