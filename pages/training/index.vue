@@ -38,31 +38,14 @@
 		<view class="scenarios-container">
 			<text class="section-title">练习场景</text>
 			<view class="scenario-list">
-				<view class="scenario-item" @tap="startTraining('attract')">
-					<view class="scenario-icon">🎯</view>
-					<view class="scenario-info">
-						<text class="scenario-title">吸引客户到现场</text>
-						<text class="scenario-desc">学习如何有效吸引客户到店参观</text>
+				<view class="scenario-item" v-for="(item, index) in scenarios" :key="index" @tap="startTraining(item)">
+					<view class="scenario-icon">
+						<text class="iconfont">{{ item.icon }}</text>
 					</view>
-					<view class="scenario-arrow">></view>
-				</view>
-				
-				<view class="scenario-item" @tap="startTraining('referral')">
-					<view class="scenario-icon">🤝</view>
 					<view class="scenario-info">
-						<text class="scenario-title">请老客户转介绍新客户</text>
-						<text class="scenario-desc">学习如何获取老客户推荐新客户</text>
+						<view class="scenario-title">{{ item.title }}</view>
+						<view class="scenario-desc">{{ item.description }}</view>
 					</view>
-					<view class="scenario-arrow">></view>
-				</view>
-				
-				<view class="scenario-item" @tap="startTraining('culture')">
-					<view class="scenario-icon">🏢</view>
-					<view class="scenario-info">
-						<text class="scenario-title">向客户介绍公司文化</text>
-						<text class="scenario-desc">学习如何向客户展示公司文化和价值观</text>
-					</view>
-					<view class="scenario-arrow">></view>
 				</view>
 			</view>
 		</view>
@@ -81,7 +64,12 @@
 						duration: '3.5h',
 						scenarios: 3
 					}
-				}
+				},
+				scenarios: [
+					{ id: 'attract', icon: '🎯', title: '吸引客户到现场', description: '学习如何有效吸引客户到店参观' },
+					{ id: 'referral', icon: '🤝', title: '请老客户转介绍新客户', description: '学习如何获取老客户推荐新客户' },
+					{ id: 'culture', icon: '🏢', title: '向客户介绍公司文化', description: '学习如何向客户展示公司文化和价值观' }
+				]
 			}
 		},
 		methods: {
@@ -109,38 +97,12 @@
 				// });
 			},
 			
-			// 开始培训
+			// 开始训练
 			startTraining(scenario) {
-				// 获取场景标题
-				let title = '';
-				switch(scenario) {
-					case 'attract':
-						title = '吸引客户到现场';
-						break;
-					case 'referral':
-						title = '请老客户转介绍新客户';
-						break;
-					case 'culture':
-						title = '向客户介绍公司文化';
-						break;
-				}
-				
-				// 使用更安全的方式跳转
-				setTimeout(() => {
-					uni.navigateTo({
-						url: '/pages/index/index?scenario=' + encodeURIComponent(title),
-						success: () => {
-							console.log('跳转成功');
-						},
-						fail: (err) => {
-							console.error('跳转失败:', err);
-							uni.showToast({
-								title: '跳转失败，请重试',
-								icon: 'none'
-							});
-						}
-					});
-				}, 100);
+				// 跳转到聊天页面，传递场景参数
+				uni.navigateTo({
+					url: `/pages/index/index?scenario=${encodeURIComponent(scenario.id)}`
+				});
 			}
 		}
 	}

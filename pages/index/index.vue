@@ -8,8 +8,39 @@
 				</view>
 				<view class="message-content">
 					<view class="message-bubble" v-if="item.type === 'text'">{{ item.content }}</view>
-					<view class="message-bubble voice-message" v-else-if="item.type === 'voice'" @tap="playVoice(item)">
-						<text class="iconfont" :class="{'playing': item.isPlaying}">🔊</text> {{ item.duration }}''
+					<view class="message-bubble" v-else-if="item.type === 'voice'">
+						<!-- 语音条 -->
+						<view class="voice-bar" @tap="playVoice(item)">
+							<view class="voice-content">
+								<text class="iconfont" :class="{'playing': item.isPlaying}">🔊</text>
+								<text class="duration">{{ item.duration }}''</text>
+							</view>
+						</view>
+						
+						<!-- 翻译和评价区域 -->
+						<view class="content-section" v-if="item.text || item.evaluation">
+							<view class="content-header">
+								<text class="content-label">内容详情</text>
+								<view class="content-btn" @tap.stop="toggleContent(item)">
+									<text class="iconfont">{{ item.showContent ? '▼' : '▶' }}</text>
+									<text>{{ item.showContent ? '收起' : '展开' }}</text>
+								</view>
+							</view>
+							
+							<view class="content-details" v-if="item.showContent">
+								<!-- 翻译部分 -->
+								<view class="content-item" v-if="item.text">
+									<text class="item-label">文字内容：</text>
+									<text class="item-text">{{ item.text }}</text>
+								</view>
+								
+								<!-- 评价部分 -->
+								<view class="content-item" v-if="item.evaluation">
+									<text class="item-label">评价：</text>
+									<text class="item-text">{{ item.evaluation }}</text>
+								</view>
+							</view>
+						</view>
 					</view>
 					<view class="message-time">{{ item.time }}</view>
 				</view>
@@ -43,16 +74,59 @@
 				innerAudioContext: null,
 				apiUrl: 'http://localhost:8000/api/messages',
 				recordingStartTime: 0,
-				recordingDuration: 0
+				recordingDuration: 0,
+				// 场景问题列表
+				scenarioQuestions: {
+					'attract': [
+						'请用1分钟时间介绍如何吸引客户到现场参观？',
+						'如果客户对价格有异议，你会如何引导客户到现场？',
+						'请分享一个成功吸引客户到现场的案例。'
+					],
+					'referral': [
+						'你会如何向老客户请求转介绍？',
+						'请分享一个成功获取老客户转介绍的案例。',
+						'如果老客户不愿意转介绍，你会如何处理？'
+					],
+					'culture': [
+						'请用1分钟时间介绍公司的核心价值观。',
+						'你会如何向客户展示公司的专业能力？',
+						'请分享一个体现公司文化的成功案例。'
+					]
+				},
+				// 场景标题映射
+				scenarioTitles: {
+					'attract': '吸引客户到现场',
+					'referral': '请老客户转介绍新客户',
+					'culture': '向客户介绍公司文化'
+				},
+				currentScenario: '',
+				currentQuestion: ''
 			}
 		},
 		onLoad(options) {
 			// 获取场景参数
 			if (options.scenario) {
-				const scenario = decodeURIComponent(options.scenario);
+				this.currentScenario = decodeURIComponent(options.scenario);
+				// 设置页面标题
+				const title = this.scenarioTitles[this.currentScenario] || this.currentScenario;
 				uni.setNavigationBarTitle({
-					title: scenario
+					title: title
 				});
+				
+				// 随机选择一个场景问题
+				const questions = this.scenarioQuestions[this.currentScenario] || [];
+				if (questions.length > 0) {
+					const randomIndex = Math.floor(Math.random() * questions.length);
+					this.currentQuestion = questions[randomIndex];
+					
+					// 添加机器人提问
+					this.messages.push({
+						content: this.currentQuestion,
+						time: this.getCurrentTime(),
+						isSelf: false,
+						type: 'text'
+					});
+				}
 			}
 			
 			// 初始化录音管理器
@@ -64,16 +138,6 @@
 			this.innerAudioContext.onEnded(() => {
 				console.log('音频播放结束');
 			});
-			
-			// 添加一些测试消息
-			this.messages = [
-				{
-					content: '你好！我是AI助手，有什么可以帮你的吗？',
-					time: this.getCurrentTime(),
-					isSelf: false,
-					type: 'text'
-				}
-			];
 		},
 		onUnload() {
 			// 页面卸载时释放资源
@@ -112,7 +176,9 @@
 				const requestData = {
 					message: message.content,
 					type: message.type,
-					timestamp: new Date().getTime()
+					timestamp: new Date().getTime(),
+					scenario: this.currentScenario,
+					question: this.currentQuestion
 				};
 				
 				// 如果是语音消息，添加语音相关数据
@@ -126,12 +192,26 @@
 					url: this.apiUrl,
 					method: 'POST',
 					data: requestData,
+					header: {
+						'Content-Type': 'application/json'
+					},
 					success: (res) => {
 						console.log('API响应:', res);
 						uni.hideLoading();
 						
 						// 处理API响应
 						if (res.statusCode === 200 && res.data) {
+							// 如果是语音消息，添加转文字结果和评价
+							if (message.type === 'voice') {
+								if (res.data.text) {
+									message.text = res.data.text;
+								}
+								if (res.data.evaluation) {
+									message.evaluation = res.data.evaluation;
+									message.showEvaluation = false;
+								}
+							}
+							
 							// 添加机器人回复
 							const replyMessage = {
 								content: res.data.reply || '抱歉，我没有理解你的问题。',
@@ -153,8 +233,9 @@
 							}, 100);
 						} else {
 							// 处理错误
+							console.error('API响应错误:', res);
 							uni.showToast({
-								title: '获取回复失败',
+								title: '获取回复失败: ' + (res.data?.detail || '未知错误'),
 								icon: 'none'
 							});
 						}
@@ -196,6 +277,9 @@
 			
 			// 初始化录音管理器
 			initRecorder() {
+				// 获取录音管理器实例
+				this.recorderManager = uni.getRecorderManager();
+				
 				this.recorderManager.onStart(() => {
 					console.log('录音开始');
 					this.isRecording = true;
@@ -220,7 +304,14 @@
 					uni.hideToast();
 					
 					// 上传录音文件
-					this.uploadVoiceFile(res.tempFilePath);
+					if (res.tempFilePath) {
+						this.uploadVoiceFile(res.tempFilePath);
+					} else {
+						uni.showToast({
+							title: '录音文件获取失败',
+							icon: 'none'
+						});
+					}
 				});
 				
 				this.recorderManager.onError((err) => {
@@ -228,7 +319,7 @@
 					this.isRecording = false;
 					uni.hideToast();
 					uni.showToast({
-						title: '录音失败',
+						title: '录音失败: ' + (err.errMsg || '未知错误'),
 						icon: 'none'
 					});
 				});
@@ -246,7 +337,9 @@
 					filePath: filePath,
 					name: 'voice',
 					formData: {
-						duration: this.recordingDuration
+						duration: this.recordingDuration,
+						scenario: this.currentScenario,
+						question: this.currentQuestion
 					},
 					success: (uploadRes) => {
 						console.log('上传成功:', uploadRes);
@@ -257,6 +350,7 @@
 						try {
 							response = JSON.parse(uploadRes.data);
 						} catch (e) {
+							console.error('解析响应失败:', e);
 							response = { success: false };
 						}
 						
@@ -268,7 +362,9 @@
 								isSelf: true,
 								type: 'voice',
 								voiceUrl: response.voiceUrl,
-								duration: this.recordingDuration
+								duration: this.recordingDuration,
+								scenario: this.currentScenario,
+								question: this.currentQuestion
 							};
 							
 							this.messages.push(voiceMessage);
@@ -277,6 +373,7 @@
 							// 发送语音消息到API
 							this.sendToApi(voiceMessage);
 						} else {
+							console.error('上传失败:', response);
 							uni.showToast({
 								title: '上传失败',
 								icon: 'none'
@@ -296,23 +393,50 @@
 			
 			// 开始录音
 			startRecording() {
+				// 如果已经在录音，先停止
+				if (this.isRecording) {
+					this.stopRecording();
+					return;
+				}
+				
 				// 请求录音权限
 				uni.authorize({
 					scope: 'scope.record',
 					success: () => {
-						this.recorderManager.start({
-							duration: 60000, // 最长录音时间，单位ms
-							sampleRate: 16000,
-							numberOfChannels: 1,
-							encodeBitRate: 96000,
-							format: 'mp3'
-						});
+						if (this.recorderManager) {
+							this.recorderManager.start({
+								duration: 60000, // 最长录音时间，单位ms
+								sampleRate: 16000,
+								numberOfChannels: 1,
+								encodeBitRate: 96000,
+								format: 'mp3'
+							});
+						} else {
+							console.error('录音管理器未初始化');
+							uni.showToast({
+								title: '录音初始化失败',
+								icon: 'none'
+							});
+						}
 					},
 					fail: () => {
 						uni.showModal({
 							title: '提示',
 							content: '需要录音权限才能发送语音消息',
-							showCancel: false
+							showCancel: false,
+							success: (res) => {
+								if (res.confirm) {
+									// 引导用户去设置页面开启权限
+									uni.openSetting({
+										success: (settingRes) => {
+											console.log('设置页面打开成功:', settingRes);
+										},
+										fail: (err) => {
+											console.error('打开设置页面失败:', err);
+										}
+									});
+								}
+							}
 						});
 					}
 				});
@@ -320,8 +444,13 @@
 			
 			// 停止录音
 			stopRecording() {
-				if (this.isRecording) {
+				if (this.recorderManager && this.isRecording) {
+					console.log('停止录音');
 					this.recorderManager.stop();
+					// 立即设置状态为false，避免重复触发
+					this.isRecording = false;
+					// 隐藏录音提示
+					uni.hideToast();
 				}
 			},
 			
@@ -381,6 +510,11 @@
 				
 				// 开始播放
 				this.innerAudioContext.play();
+			},
+			
+			// 切换内容显示
+			toggleContent(item) {
+				item.showContent = !item.showContent;
 			}
 		}
 	}
@@ -438,11 +572,89 @@
 
 	.voice-message {
 		display: flex;
+		flex-direction: column;
+		align-items: flex-start;
+		padding: 20rpx;
+		min-width: 200rpx;
+	}
+	
+	.voice-bar {
+		display: flex;
+		align-items: center;
+		justify-content: flex-start;
+		padding: 16rpx 24rpx;
+		background-color: rgba(255, 255, 255, 0.1);
+		border-radius: 8rpx;
+		width: 100%;
+	}
+	
+	.voice-content {
+		display: flex;
 		align-items: center;
 	}
-
-	.voice-message .iconfont {
-		margin-right: 10rpx;
+	
+	.duration {
+		margin-left: 12rpx;
+		font-size: 28rpx;
+		color: #333;
+	}
+	
+	.content-section {
+		margin-top: 16rpx;
+		width: 100%;
+	}
+	
+	.content-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		margin-bottom: 8rpx;
+	}
+	
+	.content-label {
+		font-size: 24rpx;
+		color: #999;
+	}
+	
+	.content-btn {
+		display: flex;
+		align-items: center;
+		padding: 4rpx 12rpx;
+		background-color: rgba(0, 0, 0, 0.05);
+		border-radius: 6rpx;
+		font-size: 24rpx;
+		color: #666;
+	}
+	
+	.content-btn .iconfont {
+		margin-right: 4rpx;
+		font-size: 20rpx;
+	}
+	
+	.content-details {
+		padding: 12rpx;
+		background-color: rgba(255, 255, 255, 0.1);
+		border-radius: 8rpx;
+	}
+	
+	.content-item {
+		margin-bottom: 12rpx;
+	}
+	
+	.content-item:last-child {
+		margin-bottom: 0;
+	}
+	
+	.item-label {
+		font-size: 24rpx;
+		color: #999;
+		margin-right: 8rpx;
+	}
+	
+	.item-text {
+		font-size: 28rpx;
+		color: #333;
+		line-height: 1.5;
 	}
 
 	.message-time {

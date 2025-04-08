@@ -12,7 +12,12 @@ const _sfc_main = {
           duration: "3.5h",
           scenarios: 3
         }
-      }
+      },
+      scenarios: [
+        { id: "attract", icon: "🎯", title: "吸引客户到现场", description: "学习如何有效吸引客户到店参观" },
+        { id: "referral", icon: "🤝", title: "请老客户转介绍新客户", description: "学习如何获取老客户推荐新客户" },
+        { id: "culture", icon: "🏢", title: "向客户介绍公司文化", description: "学习如何向客户展示公司文化和价值观" }
+      ]
     };
   },
   methods: {
@@ -30,35 +35,11 @@ const _sfc_main = {
         icon: "none"
       });
     },
-    // 开始培训
+    // 开始训练
     startTraining(scenario) {
-      let title = "";
-      switch (scenario) {
-        case "attract":
-          title = "吸引客户到现场";
-          break;
-        case "referral":
-          title = "请老客户转介绍新客户";
-          break;
-        case "culture":
-          title = "向客户介绍公司文化";
-          break;
-      }
-      setTimeout(() => {
-        common_vendor.index.navigateTo({
-          url: "/pages/index/index?scenario=" + encodeURIComponent(title),
-          success: () => {
-            common_vendor.index.__f__("log", "at pages/training/index.vue:133", "跳转成功");
-          },
-          fail: (err) => {
-            common_vendor.index.__f__("error", "at pages/training/index.vue:136", "跳转失败:", err);
-            common_vendor.index.showToast({
-              title: "跳转失败，请重试",
-              icon: "none"
-            });
-          }
-        });
-      }, 100);
+      common_vendor.index.navigateTo({
+        url: `/pages/index/index?scenario=${encodeURIComponent(scenario.id)}`
+      });
     }
   }
 };
@@ -69,9 +50,15 @@ function _sfc_render(_ctx, _cache, $props, $setup, $data, $options) {
     c: common_vendor.o((...args) => $options.viewRanking && $options.viewRanking(...args)),
     d: common_assets._imports_2,
     e: common_vendor.o((...args) => $options.viewHistory && $options.viewHistory(...args)),
-    f: common_vendor.o(($event) => $options.startTraining("attract")),
-    g: common_vendor.o(($event) => $options.startTraining("referral")),
-    h: common_vendor.o(($event) => $options.startTraining("culture"))
+    f: common_vendor.f($data.scenarios, (item, index, i0) => {
+      return {
+        a: common_vendor.t(item.icon),
+        b: common_vendor.t(item.title),
+        c: common_vendor.t(item.description),
+        d: index,
+        e: common_vendor.o(($event) => $options.startTraining(item), index)
+      };
+    })
   };
 }
 const MiniProgramPage = /* @__PURE__ */ common_vendor._export_sfc(_sfc_main, [["render", _sfc_render]]);
